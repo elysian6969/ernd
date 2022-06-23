@@ -78,8 +78,8 @@ impl LenCap {
         self.len_cap & ((1 << 9) - 1)
     }
 
-    pub const fn cap(&self) -> usize {
-        self.len_cap & ((1 << 8) - 1)
+    pub const fn capacity(&self) -> usize {
+        self.len() + (self.len_cap & ((1 << 8) - 1))
     }
 }
 
