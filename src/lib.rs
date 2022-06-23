@@ -57,7 +57,7 @@ impl<'a> TinyStorage<'a> {
     }
 }
 
-/// ecodes both length and capacity
+/// encodes both length and capacity
 #[repr(transparent)]
 pub struct LenCap {
     len_cap: usize,
