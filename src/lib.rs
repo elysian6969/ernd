@@ -16,56 +16,142 @@ mod tagged;
 mod tiny_slice;
 mod tiny_str;
 
-/*#[derive(Eq, PartialEq)]
+use core::fmt;
+use core::mem::ManuallyDrop;
+use core::marker::PhantomData;
+
+/// Storage variant.
+#[derive(Eq, PartialEq)]
 pub enum StorageKind {
-    Word,
-    DoubleWord,
-    TripleWord,
+    Tiny,
 }
 
 pub struct Backend<const STORAGE: StorageKind>;
 
-pub trait Storage<T>
-where
-    T: ?Sized,
-{
-    type Data;
-
-    fn borrowed(value: &T) -> Self::Data:
+union TinyStorageUnion<'a> {
+    borrowed: ManuallyDrop<TinyStr<'a>>,
+    owned: ManuallyDrop<String>,
 }
 
-impl const Storage<str> for Backend<{ StorageKind::Word }> {
-    type Data = Tagged<u8>;
+pub struct TinyStorage<'a> {
+    data: TinyStorageUnion<'a>,
+}
 
-    fn borrowed(value: &str) -> Self::Data {
-        let ptr = value.as_ptr();
-        let len = value.len();
-        let data = unsafe {
-            Tagged::new_unchecked(ptr.as_mut()).with_tag(len)
-        };
+impl<'a> TinyStorage<'a> {
+    #[inline]
+    pub const fn borrowed(string: &'a str) -> Self {
+        TinyStorage {
+            data: TinyStorageUnion {
+                borrowed: ManuallyDrop::new(TinyStr::from_str(string)),
+            },
+        }
+    }
 
-        data
+    #[inline]
+    pub const fn owned(string: String) -> Self {
+        TinyStorage {
+            data: TinyStorageUnion {
+                owned: ManuallyDrop::new(string),
+            },
+        }
     }
 }
 
+/// ecodes both length and capacity
+#[repr(transparent)]
+pub struct LenCap {
+    len_cap: usize,
+}
+
+impl LenCap {
+    pub const fn new(len: usize, cap: usize) -> Self {
+        // 8 bits for capacity
+        let cap = cap.saturating_sub(len) & ((1 << 8) - 1);
+
+        // 9 bits for length
+        let len = len & ((1 << 9) - 1);
+
+        Self { len_cap: len | (cap << 9) }
+    }
+
+    pub const fn len(&self) -> usize {
+        self.len_cap & ((1 << 9) - 1)
+    }
+
+    pub const fn cap(&self) -> usize {
+        self.len_cap & ((1 << 8) - 1)
+    }
+}
+
+impl<'a> fmt::Debug for TinyStorage<'a> {
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(
+    }
+}
+
+/// Implementation for each storage variant.
+pub trait Storage<'a, T>
+where
+    T: ?Sized + 'a,
+{
+    type Data;
+    type Owned;
+
+    fn borrowed(borrowed: &'a T) -> Self::Data;
+    fn owned(owned: Self::Owned) -> Self::Data;
+}
+
+impl<'a> const Storage<'a, str> for Backend<{ StorageKind::Tiny }> {
+    type Data = TinyStorage<'a>;
+    type Owned = String;
+
+    fn borrowed(string: &'a str) -> Self::Data {
+        TinyStorage::borrowed(string)
+    }
+
+    fn owned(string: String) -> Self::Data {
+        TinyStorage::owned(string)
+    }
+}
+
+#[allow(dead_code)]
 pub struct Cow<'a, T, const STORAGE: StorageKind>
 where
     T: ?Sized + 'a,
-    Backend<{ STORAGE }>: Storage<T>,
+    Backend<{ STORAGE }>: Storage<'a, T>,
 {
-    pub data: <Backend<{ STORAGE }> as Storage<T>>::Data,
+    data: <Backend<{ STORAGE }> as Storage<'a, T>>::Data,
     _phantom: PhantomData<&'a T>,
 }
 
-impl Cow<'a, T, const STORAGE: StorageKind>
+impl<'a, T, const STORAGE: StorageKind> Cow<'a, T, STORAGE>
 where
     T: ?Sized + 'a,
-    Backend<{ STORAGE }>: Storage<T>,
+    Backend<{ STORAGE }>: Storage<'a, T>,
 {
     #[inline]
-    pub const fn borrowed(value: T) ->Self {
-        let data = <Backend<{ STORAGE }> as Storage<T>>::borrowed(value);
+    pub const fn borrowed(value: &'a T) -> Self
+    where
+        Backend<{ STORAGE }>: ~const Storage<'a, T>,
+    {
+        let data = <Backend<{ STORAGE }> as Storage<'a, T>>::borrowed(value);
 
-        Self { data, _phantom: PhantomData }
+        Self {
+            data,
+            _phantom: PhantomData,
+        }
     }
-}*/
+}
+
+impl<'a, T, const STORAGE: StorageKind> fmt::Debug for Cow<'a, T, STORAGE>
+where
+    T: fmt::Debug + ?Sized + 'a,
+    Backend<{ STORAGE }>: Storage<'a, T>,
+    <Backend<{ STORAGE }> as Storage<'a, T>>::Data: fmt::Debug,
+{
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(&self.data, fmt)
+    }
+}
