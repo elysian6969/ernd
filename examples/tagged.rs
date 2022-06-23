@@ -1,22 +1,11 @@
-use core::mem;
-use ernd::{Cow, StorageKind, TinySlice, TinyStr};
+use ernd::TinyString;
 
 fn main() {
-    let slice = TinySlice::from_slice(&[1, 2, 3]);
+    let mut string = TinyString::new();
 
-    println!("slice = {slice:?}");
-    println!("size  = {:?}", mem::size_of::<TinySlice<'_, i32>>());
+    string.push_str("massively ");
+    string.push_str("fat ");
+    string.push_str("sex");
 
-    let string = TinyStr::from_str("hello world");
-
-    println!("string = {string:?}");
-    println!("size   = {:?}", mem::size_of::<TinyStr<'_>>());
-
-    let cow: Cow<'_, str, { StorageKind::Tiny }> = Cow::borrowed("xd");
-
-    println!("cow  = {cow:?}");
-    println!(
-        "size = {:?}",
-        mem::size_of::<Cow<'_, str, { StorageKind::Tiny }>>()
-    );
+    println!("{string:?}");
 }

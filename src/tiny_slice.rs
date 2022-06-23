@@ -14,7 +14,7 @@ impl<'a, T> TinySlice<'a, T> {
     pub const fn from_slice(slice: &'a [T]) -> Self {
         let ptr = slice.as_ptr().as_mut();
         let len = slice.len();
-        let tagged = unsafe { Tagged::new_unchecked(ptr).with_tag(len) };
+        let tagged = unsafe { Tagged::new_unchecked(ptr).with_tag(len as u32) };
         let _phantom = PhantomData;
 
         Self { tagged, _phantom }
@@ -22,7 +22,7 @@ impl<'a, T> TinySlice<'a, T> {
 
     #[inline]
     pub const fn as_slice(&self) -> &'a [T] {
-        unsafe { slice::from_raw_parts(self.tagged.as_ptr(), self.tagged.tag()) }
+        unsafe { slice::from_raw_parts(self.tagged.as_ptr(), self.tagged.tag() as usize) }
     }
 }
 

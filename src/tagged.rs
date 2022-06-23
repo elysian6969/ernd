@@ -34,20 +34,20 @@ impl<T> Tagged<T> {
     }
 
     #[inline]
-    pub const unsafe fn from_parts(ptr: *mut T, tag: usize) -> Self {
+    pub const unsafe fn from_parts(ptr: *mut T, tag: u32) -> Self {
         let addr = expose_addr(ptr);
-        let ptr = from_exposed_addr_mut(addr | (tag << ADDR));
+        let ptr = from_exposed_addr_mut(addr | ((tag as usize) << ADDR));
 
         Self::new_unchecked(ptr)
     }
 
     #[inline]
-    pub const fn to_parts(self) -> (*mut T, usize) {
+    pub const fn to_parts(self) -> (*mut T, u32) {
         let addr = expose_addr(self.pointer.as_mut());
         let ptr = from_exposed_addr_mut(addr & ADDR_MASK);
         let tag = addr >> ADDR;
 
-        (ptr, tag)
+        (ptr, tag as u32)
     }
 
     #[inline]
@@ -69,12 +69,12 @@ impl<T> Tagged<T> {
     }
 
     #[inline]
-    pub const fn tag(self) -> usize {
+    pub const fn tag(self) -> u32 {
         self.to_parts().1
     }
 
     #[inline]
-    pub const fn with_tag(self, tag: usize) -> Self {
+    pub const fn with_tag(self, tag: u32) -> Self {
         let (ptr, _tag) = self.to_parts();
 
         unsafe { Self::from_parts(ptr, tag) }

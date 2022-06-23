@@ -7,18 +7,23 @@
 #![feature(pointer_byte_offsets)]
 #![feature(ptr_const_cast)]
 #![feature(strict_provenance)]
+#![feature(vec_into_raw_parts)]
 
+pub use licity::Licity;
 pub use tagged::Tagged;
 pub use tiny_slice::TinySlice;
 pub use tiny_str::TinyStr;
+pub use tiny_string::TinyString;
 
+mod licity;
 mod tagged;
 mod tiny_slice;
 mod tiny_str;
+mod tiny_string;
 
 use core::fmt;
-use core::mem::ManuallyDrop;
 use core::marker::PhantomData;
+use core::mem::ManuallyDrop;
 
 /// Storage variant.
 #[derive(Eq, PartialEq)]
@@ -33,6 +38,7 @@ union TinyStorageUnion<'a> {
     owned: ManuallyDrop<String>,
 }
 
+#[allow(dead_code)]
 pub struct TinyStorage<'a> {
     data: TinyStorageUnion<'a>,
 }
@@ -54,39 +60,6 @@ impl<'a> TinyStorage<'a> {
                 owned: ManuallyDrop::new(string),
             },
         }
-    }
-}
-
-/// encodes both length and capacity
-#[repr(transparent)]
-pub struct LenCap {
-    len_cap: usize,
-}
-
-impl LenCap {
-    pub const fn new(len: usize, cap: usize) -> Self {
-        // 8 bits for capacity
-        let cap = cap.saturating_sub(len) & ((1 << 8) - 1);
-
-        // 9 bits for length
-        let len = len & ((1 << 9) - 1);
-
-        Self { len_cap: len | (cap << 9) }
-    }
-
-    pub const fn len(&self) -> usize {
-        self.len_cap & ((1 << 9) - 1)
-    }
-
-    pub const fn capacity(&self) -> usize {
-        self.len() + (self.len_cap & ((1 << 8) - 1))
-    }
-}
-
-impl<'a> fmt::Debug for TinyStorage<'a> {
-    #[inline]
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(
     }
 }
 
