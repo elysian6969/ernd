@@ -1,5 +1,5 @@
 use core::mem;
-use fun::{Cow, StorageKind, TinySlice, TinyStr};
+use ernd::{Cow, StorageKind, TinySlice, TinyStr};
 
 fn main() {
     let slice = TinySlice::from_slice(&[1, 2, 3]);
