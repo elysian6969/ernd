@@ -1,5 +1,5 @@
 use core::mem;
-use cow::{TinySlice, TinyStr};
+use fun::{TinySlice, TinyStr};
 
 fn main() {
     let slice = TinySlice::from_slice(&[1, 2, 3]);
