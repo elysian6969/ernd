@@ -1,10 +1,4 @@
-const LEN_CAP_MAX: usize = 17;
-
-const LEN_BITS: usize = 9;
-const CAP_BITS: usize = LEN_CAP_MAX - LEN_BITS;
-
-const LEN_MASK: usize = (1 << LEN_BITS) - 1;
-const CAP_MASK: usize = (1 << CAP_BITS) - 1;
+use crate::consts::{CAP_MASK, LEN_BITS, LEN_MASK};
 
 /// Length and capacity encoded into 17 bits.
 #[repr(transparent)]

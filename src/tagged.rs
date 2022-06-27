@@ -1,11 +1,5 @@
+use crate::consts::{PTR_BITS, PTR_MASK};
 use core::{fmt, mem};
-
-const SIZE: usize = 64;
-const TAG: usize = 17;
-const ADDR: usize = SIZE - TAG;
-
-const ADDR_MASK: usize = (1 << ADDR) - 1;
-//const TAG_MASK: usize = !ADDR_MASK;
 
 /// `*mut T` but tagged.
 #[repr(transparent)]
@@ -33,19 +27,21 @@ impl<T> Tagged<T> {
         }
     }
 
+    /// Construct a tagged pointer from raw parts.
     #[inline]
     pub const unsafe fn from_parts(ptr: *mut T, tag: u32) -> Self {
         let addr = expose_addr(ptr);
-        let ptr = from_exposed_addr_mut(addr | ((tag as usize) << ADDR));
+        let ptr = from_exposed_addr_mut(addr | ((tag as usize) << PTR_BITS));
 
         Self::new_unchecked(ptr)
     }
 
+    /// Decompose this tagged pointer into raw parts.
     #[inline]
     pub const fn to_parts(self) -> (*mut T, u32) {
         let addr = expose_addr(self.pointer.as_mut());
-        let ptr = from_exposed_addr_mut(addr & ADDR_MASK);
-        let tag = addr >> ADDR;
+        let ptr = from_exposed_addr_mut(addr & PTR_MASK);
+        let tag = addr >> PTR_BITS;
 
         (ptr, tag as u32)
     }

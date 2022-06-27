@@ -21,6 +21,8 @@ mod tiny_slice;
 mod tiny_str;
 mod tiny_string;
 
+pub mod consts;
+
 use core::fmt;
 use core::marker::PhantomData;
 use core::mem::ManuallyDrop;
